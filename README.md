@@ -9,13 +9,40 @@ Native documentation works without IT Glue. Installers configure only the roles 
 the Bifrost platform resources needed for their organization. IT Glue is an optional
 one-way migration source for teams that have an existing IT Glue account.
 
+## MTG feature development
+
+This fork develops Skra's operational documentation features on top of the
+upstream Bifrost Solution. Its first slice adds expiration tracking. In Settings →
+Asset types, enable **Track as an expiration date** on a Date field, then enter a
+`YYYY-MM-DD` value on an asset. The dashboard shows overdue and upcoming dates for
+the selected organization, with 7, 14, 30, and 90 day windows. Ordinary dates are
+excluded unless explicitly flagged. Archived/disabled assets and inactive types
+are excluded; the caller's existing table policies still govern restricted rows.
+
+The dashboard scans 100 assets per request. Use **Check next 100 assets** until the
+scan is complete; dates are ordered across the assets checked so far, not across
+unread pages. Refresh starts a new scan. Invalid nonempty flagged date values are
+counted rather than treated as valid dates. Dates use the current UTC calendar day.
+This slice does not send reminders or change schedules, secrets, or table policies.
+Mapped IT Glue schemas retain their existing source-overwrite behavior; an upstream
+schema change can replace locally added expiration flags.
+
+Next slices are deduplicated expiration notifications, attributed SOP checklists,
+favorites and saved preferences, and field-level sync conflict review. Keep each
+slice independently reviewable and preserve customer/provider isolation.
+
+Production releases should use reviewed release tags in this fork. Connecting an
+install to Git changes its source owner; it does not deploy a feature branch.
+Advance the configured release ref and sync only after release acceptance. Preserve
+the upstream slug and manifest identities so the existing install retains its data.
+
 ## Install
 
 Use Bifrost CLI 1.4.2 or later against the intended Bifrost instance:
 
 ```bash
-git clone https://github.com/gobifrost/docs.git
-cd docs
+git clone https://github.com/MTG-Thomas/bifrost-docs-solution.git
+cd bifrost-docs-solution
 bifrost solution deploy . --global
 ```
 

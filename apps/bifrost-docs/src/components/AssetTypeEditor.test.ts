@@ -2,6 +2,14 @@ import { describe, expect, it } from "vitest";
 import { normalizeAssetTypeFields, safeAssetTypeFields, serializeAssetTypeFields } from "./AssetTypeEditor";
 
 describe("asset type schema helpers", () => {
+  it("round-trips expiration flags and clears them when a date becomes text", () => {
+    const source = [{ attributes: { "name-key": "renewal", kind: "date", name: "Renewal", is_expiration: true } }];
+    const fields = normalizeAssetTypeFields(source);
+    expect(fields[0].is_expiration).toBe(true);
+    expect(serializeAssetTypeFields(fields)).toEqual(source);
+    expect(serializeAssetTypeFields([{ ...fields[0], type: "text" }])[0]).toEqual({ attributes: expect.objectContaining({ kind: "text", is_expiration: false }) });
+    expect(serializeAssetTypeFields([{ ...fields[0], is_expiration: false }])[0]).toEqual({ attributes: expect.objectContaining({ is_expiration: false }) });
+  });
   it("round-trips imported protected and unsupported definitions without converting them", () => {
     const source = [
       { attributes: { name: "Host Name", kind: "text", required: true, options: null } },

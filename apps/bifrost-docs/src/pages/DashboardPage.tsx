@@ -3,6 +3,7 @@ import { Building2, FileText, KeyRound, Layers, MapPin, Server, type LucideIcon 
 import { Card, CardContent } from "@/components/ui/card";
 import { useDocsOrganizations } from "@/components/layout/useDocsOrganizations";
 import { useRecentRecords, type RecentRecord } from "@/components/layout/recentRecords";
+import { UpcomingExpirations } from "@/components/UpcomingExpirations";
 
 const RECORD_TYPES: Record<string, { icon: LucideIcon; label: string; route: string }> = {
   documents: { icon: FileText, label: "Document", route: "documents" },
@@ -44,6 +45,7 @@ export function DashboardPage() {
   return (
     <div className="docs-page">
       <section className="page-heading"><div><h1>Dashboard</h1><p>Welcome to Bifrost Docs.</p></div></section>
+      <UpcomingExpirations />
       {recentOrganizations.length > 0 && <section aria-label="Recent organizations"><h2 className="mb-4 text-lg font-semibold">Recent Organizations</h2><div className="flex gap-4 overflow-x-auto pb-2">{recentOrganizations.map((record) => <RecentCard key={`${record.kind}:${record.id}`} record={record} />)}</div></section>}
       {recentItems.length > 0 && <section aria-label="Recent items"><h2 className="mb-4 text-lg font-semibold">Recent Items</h2><div className="flex gap-4 overflow-x-auto pb-2">{recentItems.map((record) => <RecentCard key={`${record.kind}:${record.id}`} record={record} organizationName={organizationNames.get(record.organizationId)} />)}</div></section>}
       <section className="text-[var(--bf-muted)]"><p>Select an organization from the header to get started, or <Link to="/organizations" className="inline-flex min-h-6 items-center font-medium text-[var(--bf-primary)] underline underline-offset-3">Browse organizations</Link>.</p></section>
