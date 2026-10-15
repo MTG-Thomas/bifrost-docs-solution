@@ -15,6 +15,7 @@ vi.mock("@/components/layout/useDocsOrganizations", () => ({
   useDocsOrganizations: () => ({ organizations: mocks.organizations }),
 }));
 vi.mock("@/components/layout/recentRecords", () => ({ useRecentRecords: () => mocks.recent }));
+vi.mock("@/components/UpcomingExpirations", () => ({ UpcomingExpirations: () => <section aria-label="Upcoming expirations" /> }));
 
 import { DashboardPage } from "./DashboardPage";
 

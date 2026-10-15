@@ -336,3 +336,15 @@ workflows:
     access_level: role_based
     role_names: ["Bifrost Docs Administrator"]
     timeout_seconds: 1800
+
+  4cd9ecbe-462d-49fc-b785-19bfdf5d433b:
+    id: 4cd9ecbe-462d-49fc-b785-19bfdf5d433b
+    name: docs_list_expirations
+    path: functions/expirations.py
+    function_name: docs_list_expirations
+    type: workflow
+    description: Read one bounded page of explicitly flagged asset expiration dates for an authorized organization.
+    category: Bifrost Docs
+    access_level: role_based
+    role_names: ["Bifrost Docs Reader", "Bifrost Docs Editor", "Bifrost Docs Administrator"]
+    timeout_seconds: 60

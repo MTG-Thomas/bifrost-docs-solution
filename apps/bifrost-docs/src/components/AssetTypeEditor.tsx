@@ -6,7 +6,7 @@ import { BfCheckbox } from "@/components/bifrost/BfSelection";
 import { BfSelect, BfTextField, BfTextarea } from "@/components/bifrost/BfField";
 
 export type AssetFieldType = "text" | "textbox" | "number" | "date" | "checkbox" | "select" | "header" | "url" | "tag" | "upload" | "password" | "totp" | "unknown";
-type SourceState = Pick<AssetTypeField, "key" | "name" | "type" | "required" | "show_in_list" | "default_value" | "options">;
+type SourceState = Pick<AssetTypeField, "key" | "name" | "type" | "required" | "show_in_list" | "default_value" | "options" | "is_expiration">;
 
 export type AssetTypeField = {
   key: string;
@@ -14,6 +14,7 @@ export type AssetTypeField = {
   type: AssetFieldType;
   required: boolean;
   show_in_list: boolean;
+  is_expiration?: boolean;
   default_value: string | null;
   options: string[] | null;
   /** Original source type, retained for diagnostics and exact serialization. */
@@ -85,6 +86,7 @@ function stateFor(field: AssetTypeField): SourceState {
     type: field.type,
     required: field.required,
     show_in_list: field.show_in_list,
+    is_expiration: field.is_expiration,
     default_value: field.default_value,
     options: field.options ? [...field.options] : null,
   };
@@ -108,6 +110,7 @@ function serializedField(field: AssetTypeField): Record<string, unknown> {
   setAliased(attrs, ["type", "kind"], field.type, "type");
   setAliased(attrs, ["required"], field.required, "required");
   setAliased(attrs, ["show_in_list", "show-in-list"], field.show_in_list, "show_in_list");
+  if (field.is_expiration || "is_expiration" in attrs) attrs.is_expiration = field.type === "date" && field.is_expiration === true;
   setAliased(attrs, ["default_value", "default-value"], field.default_value, "default_value");
   setAliased(attrs, ["options"], field.type === "select" ? field.options?.filter(Boolean) ?? [] : null, "options");
   return source;
@@ -131,6 +134,7 @@ export function normalizeAssetTypeFields(raw: unknown): AssetTypeField[] {
       type: kind.type,
       required: Boolean(attrs.required),
       show_in_list: Boolean(attrs.show_in_list ?? attrs["show-in-list"]),
+      is_expiration: attrs.is_expiration === true,
       default_value: (attrs.default_value ?? attrs["default-value"]) == null ? null : String(attrs.default_value ?? attrs["default-value"]),
       options: optionsFrom(attrs.options),
       sourceType: kind.sourceType,
@@ -215,6 +219,7 @@ export function AssetTypeEditor({ initial, onSave, onCancel, saving = false, sou
           {field.type === "select" && <BfTextarea label="Options" hint="One option per line." value={(field.options ?? []).join("\n")} onChange={(event) => updateField(index, { options: event.target.value.split("\n").map((option) => option.trim()).filter(Boolean) })} />}
           {field.type !== "header" && field.type !== "upload" && <BfTextField label="Default value" value={field.default_value ?? ""} onChange={(event) => updateField(index, { default_value: event.target.value || null })} />}
           {field.type === "upload" && <p className="text-sm text-muted-foreground">Upload references are managed with attachments.</p>}
+          {field.type === "date" && <BfCheckbox checked={field.is_expiration === true} onChange={(is_expiration) => updateField(index, { is_expiration })}>Track as an expiration date</BfCheckbox>}
           <div className="flex flex-wrap gap-3"><BfCheckbox checked={field.required} onChange={(required) => updateField(index, { required })}>Required</BfCheckbox><BfCheckbox checked={field.show_in_list} onChange={(show_in_list) => updateField(index, { show_in_list })}>Show in list</BfCheckbox></div></>}
           <div className="flex flex-wrap gap-3"><BfButton type="button" variant="ghost" aria-label={`Move ${field.name || `field ${index + 1}`} up`} disabled={index === 0 || readOnly || isReadOnly(values.fields[index - 1])} icon={<ChevronUp size={15} />} onClick={() => move(index, -1)}>Up</BfButton><BfButton type="button" variant="ghost" aria-label={`Move ${field.name || `field ${index + 1}`} down`} disabled={index === values.fields.length - 1 || readOnly || isReadOnly(values.fields[index + 1])} icon={<ChevronDown size={15} />} onClick={() => move(index, 1)}>Down</BfButton><BfButton type="button" variant="danger" disabled={readOnly} icon={<Trash2 size={15} />} onClick={() => update({ fields: values.fields.filter((_, position) => position !== index) })}>Remove</BfButton></div>
         </div>;
