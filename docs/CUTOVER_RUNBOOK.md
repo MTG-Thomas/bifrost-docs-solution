@@ -48,3 +48,32 @@ Rollback changes routing and access; it does not delete migrated data.
    Integration credentials and mappings before relying on a restored environment.
 5. Classify and repair the blocking condition, repeat the required non-production
    proof, and schedule a new go/no-go decision.
+
+## Attachments that require browser authentication
+
+IT Glue can return a tenant web link such as `/attachments/<id>` in an
+attachment's `download-url`, rather than an API-accessible or signed file URL.
+A successful metadata request does not prove that this link can download the
+file. Refreshing the parent or attachment metadata can return the same link.
+
+If the link redirects to sign-in, migration reports HTTP 401 with
+`attachment download requires browser authentication`. It stops before following
+the sign-in page or uploading file bytes. API keys remain restricted to the API
+origin; do not forward them or browser cookies to arbitrary download hosts.
+The HTML integrity check remains enabled for all other downloads.
+
+Keep these items failed and resumable. Do not mark them imported, skip them to
+make proof green, or upload the sign-in HTML as the original attachment.
+For CLI-only recovery, obtain an approved export or downloaded original file and
+record the exact source organization, parent resource type/ID, attachment ID,
+original filename, declared MIME type/size, and local file SHA-256 in a private
+change record. Verify file type and size against fresh metadata and review any
+difference before applying a recovery. Never commit customer files or signed
+URLs. A filename match alone is insufficient source-identity evidence.
+
+The current API migration does not accept local-file overrides. Downloading a
+file alone therefore does not repair the failed item: a reviewed recovery path
+must preserve the attachment's existing deterministic identity, organization,
+parent and restriction policy, complete managed-file registration, verify stored
+bytes/hash, and retain an auditable migration result. Re-run reconciliation only
+after that recovery is implemented and verified.

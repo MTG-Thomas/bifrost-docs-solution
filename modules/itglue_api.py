@@ -352,6 +352,13 @@ class ITGlueClient:
                 if not redirect:
                     raise ITGlueError("IT Glue file download redirected without a location")
                 resolved_source = urljoin(resolved_source, redirect)
+                if _is_browser_authentication_url(resolved_source):
+                    raise ITGlueError(
+                        "[xfer-v7] IT Glue attachment download requires browser authentication; "
+                        "API-key access did not provide file bytes. "
+                        "Supply an approved export or downloaded file for this attachment.",
+                        status_code=401,
+                    )
                 headers = (
                     {"x-api-key": self._api_key}
                     if (urlparse(resolved_source).scheme, urlparse(resolved_source).netloc)
@@ -464,6 +471,14 @@ class ITGlueClient:
                 f"File transfer size mismatch: expected {size_bytes} bytes, received {transferred}"
             )
         return transferred, digest.hexdigest()
+
+
+def _is_browser_authentication_url(value: str) -> bool:
+    """Recognize sign-in redirects without logging URLs or following interactive auth."""
+    path = urlparse(value).path.rstrip("/").casefold()
+    return any(path.endswith(suffix) for suffix in (
+        "/login", "/sign_in", "/signin", "/oauth2/authorize", "/oauth2/v2.0/authorize",
+    ))
 
 
 def _as_int(value: Any) -> int | None:
