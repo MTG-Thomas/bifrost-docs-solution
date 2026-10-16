@@ -705,3 +705,49 @@ def test_file_copy_remeasure_timeout_closes_initial_source_and_destination_clien
     assert source_requests == 2
     assert len(created) == 3
     assert all(client.closed for client in created)
+
+
+@pytest.mark.parametrize("login_url", [
+    "https://tenant.itglue.com/login?return_to=private",
+    "https://tenant.itglue.com/users/sign_in",
+    "https://login.microsoftonline.com/tenant/oauth2/authorize?state=private",
+])
+def test_file_copy_reports_browser_authentication_without_following_login(monkeypatch: Any, login_url: str) -> None:
+    real_client = httpx.AsyncClient
+    requests: list[httpx.Request] = []
+    clients: list[Any] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if len(requests) == 1:
+            return httpx.Response(302, headers={"Location": login_url})
+        return httpx.Response(200, headers={"Content-Type": "text/html"}, content=b"<!-- sign in --><html></html>")
+
+    class TransferClient:
+        def __init__(self, **kwargs: Any) -> None:
+            self.source = real_client(transport=httpx.MockTransport(handler))
+            clients.append(self.source)
+
+        def build_request(self, *args: Any, **kwargs: Any) -> httpx.Request:
+            return self.source.build_request(*args, **kwargs)
+
+        async def send(self, *args: Any, **kwargs: Any) -> httpx.Response:
+            return await self.source.send(*args, **kwargs)
+
+        async def aclose(self) -> None:
+            await self.source.aclose()
+
+    async def copy() -> None:
+        async with real_client(transport=httpx.MockTransport(handler)) as raw:
+            client = ITGlueClient("private-api-key", base_url="https://api.itglue.test", client=raw)
+            await client.stream_to_signed_url("https://tenant.itglue.com/attachments/123", "https://storage.test/private", content_type="application/pdf")
+
+    monkeypatch.setattr("modules.itglue_api.httpx.AsyncClient", TransferClient)
+    with pytest.raises(ITGlueError, match="requires browser authentication") as caught:
+        asyncio.run(copy())
+    assert caught.value.status_code == 401
+    assert len(requests) == 1
+    assert "x-api-key" not in requests[0].headers
+    assert all(client.is_closed for client in clients)
+    assert "private" not in str(caught.value)
+    assert "https://" not in str(caught.value)
